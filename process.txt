@@ -1,0 +1,101 @@
+EEE3535-01
+Fall 2017
+Assignment 2: Process
+Due: Oct 30, 2017, 11:59PM
+
+1 Installation
+• Go to the main directory of xv6 that you installed during Assignment #1. Obtain the following script file using wget in Linux terminal, change its permission setting, and run it.
+$ cd xv6/
+$ wget http://web.yonsei.ac.kr/icsl/teaching/assignments/process.sh
+$ chmod 750 process.sh
+$ ./process.sh
+This script downloads a couple of new files for this assignment (i.e., time.c and process.txt) and also overwrites an existing file (i.e., Makefile).
+• Compile xv6, and launch it.
+$ make
+$ make qemu
+• Check if xv6 is running fine, and then close it by typing Ctrl+a, x.
+
+2 Part I. Creating A Process
+• This assignment is comprised of two parts. The first part is to write a program called time that measures the execution time of a process. To understand what this program does, try the command line below in Linux terminal (e.g., Ubuntu), not in xv6 yet.
+$ time ls -l /usr/bin/
+• This command line runs ls with -l option that displays the details of all the contents in /usr/bin/ directory. The prepended time measures how long it takes to run the ls process. You may see results similar to the following.
+...
+-rwxr-xr-x 1 root root   192520 Oct 1   2017  zip
+-rwxr-xr-x 1 root root   86224  Oct 5   2017  zipcloak
+-rwxr-xr-x 1 root root   48459  Oct 11  2017  zipdetails
+...
+real   0m0.064s
+user   0m0.016s
+sys    0m0.020s
+• The output of ls -l is first printed (i.e., details of all the files in /usr/bin/ directory),followed by measured execution time. real is wall clock time from process initiation to completion including time slices used by other processes; the OS performs context switching, so the ls process does not run continuously from the beginning to the end. user is the amount of time that CPU runs this process in user mode, and sys is time spent in kernel mode to handle system calls requested by the process. In the example above, real is 0 minutes and 0.064 seconds, and user and sys can be read in the same way.
+• You will have to implement a similar time program in xv6 that measures the execution time (i.e., real) of another process by using system calls such as fork() and exec().
+• Now launch xv6 by typing make qemu.
+• After xv6 has successfully loaded itself, try running the command line below to see how long it takes for wc to count the number of lines, words, and bytes in the README file.
+$ time wc README
+• Since this program is not implemented yet, you should see nothing but the following. wc README (pid = 0): runtime = 0s0ms
+• Complete the time.c file to show correct process ID and runtime information. You may modify any lines in the file (or even other files if necessary), but do make sure that the result is displayed exactly in the format shown above.
+• There should be (at least) two processes created while running the time wc README example. One is wc, and another is time that spawns a child process (i.e., wc) via fork(). At this moment, you should have already guessed that wc would be executed through a system call, exec() or a similar kind. Execution system call in xv6 is exec() instead of execvp(). The main process (i.e., time) measures how long it takes for the child process to complete since its creation.
+• Hint: xv6 includes a system call uptime() that returns the current value of a variable ticks. This variable is incremented at every timer interrupt, and the default interval of timer interrupt in xv6 is set to 10ms. Using the uptime() system call, you can measure the execution time by 10ms steps.
+• Optional: Can you modify the default timer interrupt to 1ms in xv6? You don’t have to implement or submit an answer to this question.
+• Part I submission
+– Complete the time.c file to make time command working in xv6.
+– When done, run the following command line that searches all the matching "xv6" string patterns in both README and process.txt files.
+$ time grep xv6 README process.txt
+– Open an empty text file, and record all the output such as:
+$ time grep xv6 README process.txt
+The following contents are from the ’README’ file of original xv6
+...
+grep xv6 README process.txt (pid = 8): runtime = 0s140ms
+– pid and runtime numbers are randomly made up in the example above. You may see quite different numbers in your experiments.
+– Save the result file using your student ID such as 201501234.txt.
+
+3 Part II. Process Status
+• The second part of this assignment is to make runtime measurement as a default option for every process executed in xv6.
+• It requires adding a variable to a C struct that stores the process information. The new variable should save the value of ticks at which the process is created.
+• Hint: process-related information is stored in struct proc. Find which file defines this struct, and add an unsigned integer variable uint start tick. This variable can be used to save ticks when the process is created.
+struct proc {
+...
+// A new variable to store "ticks" when the process is created
+uint start_tick;
+...
+};
+• A process in xv6 is created inside a function allocproc(). Find which file includes this function, and save the value of ticks at the start ticks of struct proc corresponding to the process being created.
+• Similarly, a process is destroyed in a function exit(). Find which file includes this function, and read the value of ticks when the process is being destroyed. Calculating the difference between current ticks and start ticks stored in struct proc can tell the execution time of the process. Note that ticks are incremented at every 10ms timer interrupt. When displaying the runtime, also show the process ID and name in the following format:
+pid = 8, name = ls, runtime = 0s40ms
+• Once successfully implemented, simply running a process should show all these three pieces of information at the end of execution. For instance,typing wc README should show something similar to this.
+$ wc README
+58 326 2325 README
+pid = 8, name = wc, runtime = 0s40ms
+• Optional: Reading the value of ticks is not atomic, which requires a lock to correctly load the value of ticks. Since we have not yet learned shared variables and locks, this assignment is made to work without necessarily using locks. However, you may want to add the following lines for correctness.
+acquire(&tickslock);
+/* Read the value of ticks. */
+release(&tickslock);
+• Part II submission
+– After Part II implementations are done, re-open the text file that you created during Part I (e.g., 201501234.txt). Run the command line, cat README | grep xv6, and record the output in the text file. Note that there must be multiple processes created during this command run. Results should appear like this.
+$ cat README | grep xv6
+The following contents are from the ’README’ file of original xv6
+...
+pid = 8, name = ??, runtime = 0s40ms
+
+4 Submission
+• After recording the results of Part I and II, create a zip file that contains all the source and header files, Makefile, and result text file (e.g., 201501234.txt). The result file must include only those requested in Part I submission and Part II submission. Do not include the results of your own experiments.
+• First, clean up your xv6 directory before creating a zip file.
+$ make clean
+• Create the zip using the following command line, and name it as your_student_ID.zip.
+$ zip -r 201501234.zip Makefile *.h *.c 201501234.txt
+• Upload the zip file (e.g., 201501234.zip) at YSCEC.
+
+5 Grading Rules
+The following is a general guideline for grading this assignment. 10-point scale will be used for this assignment. Grading rules may be subject to change.
+• -1 point: Submitted zip or result text file is not named after student ID. Do not put other things in the file name such as your name, date, project2, homework2, etc.
+• -1 point: The text file contains results other than what are described in Part I submission and Part II submission.
+• -1 point per part: Results are incorrect/incomplete, but submitted files show seemingly enough efforts to complete the assignment. xv6 compiles and runs fine.
+• -2 points per part: xv6 does not compile or run, but submitted files show seemingly enough efforts to complete the assignment.
+• -4 points per part: Results are incorrect/incomplete, or xv6 does not compile or run. Submitted files show little or almost no signs of efforts to complete the assignment.
+• -10 points:
+– No submission.
+– Result text file is not reproducible; faked or copied?
+– A student deludes the grader by tweaking source codes to shoot for -1 points per part, but in fact she/he did not work on the assignment.
+
+6 Grade Dispute
+Your teaching assistant (TA) will grade your assignments. If you think your assignment scores are incorrect for any reasons, discuss your concerns with the TA. In case no agreement is made between you and the TA, elevate the case to the instructor to review your assignments. Refer to the course website for the contact information of TA: http://web.yonsei.ac.kr/icsl/teaching/eee3535.html
