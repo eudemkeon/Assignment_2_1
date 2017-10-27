@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
 	 for(int i = 1; i < argc; i++) { printf(1, "%s ", argv[i]); }
    
 	 printf(1, "(pid = %d): ",rc);
-    printf(1, "runtime = %ds%dms\n", runtime/1000, runtime-runtime%1000);
+    printf(1, "runtime = %ds%dms\n", runtime/1000, runtime%1000);
     exit();
 	}
 
