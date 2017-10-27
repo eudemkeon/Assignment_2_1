@@ -36,8 +36,8 @@ allocproc(void)
 {
   struct proc *p;
   char *sp;
-   
- acquire(&ptable.lock);
+
+  acquire(&ptable.lock);
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == UNUSED)
       goto found;
@@ -70,12 +70,6 @@ found:
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
 
-//my addtion start
-  acquire(&tickslock);
-  p->start_tick = ticks;
-  release(&tickslock);
-  cprintf("------------process start----------------\n pid = %d,  name = %s,   start time = %d\n ",p->pid,p->name,p->start_tick*10);
-//my addition end
   return p;
 }
 
@@ -174,9 +168,7 @@ exit(void)
 {
   struct proc *p;
   int fd;
-  uint end_tick;
-  uint second;
-  uint msecond;
+
   if(proc == initproc)
     panic("init exiting");
 
@@ -190,9 +182,7 @@ exit(void)
 
   iput(proc->cwd);
   proc->cwd = 0;
-  
 
-  
   acquire(&ptable.lock);
 
   // Parent might be sleeping in wait().
@@ -205,20 +195,7 @@ exit(void)
       if(p->state == ZOMBIE)
         wakeup1(initproc);
     }
-	 
   }
- 
-//my addition start 
-  acquire(&tickslock);
-  end_tick = ticks;
-  release(&tickslock);
-
-  second = (end_tick-proc->start_tick)/100;
-  msecond = (end_tick-proc->start_tick)*10 - second*1000;
-  cprintf("\n\npid = %d, name = %s, runtime = %ds %dms---\n",proc->pid,proc->name,second,msecond);
-  
-//my addition end  
-
 
   // Jump into the scheduler, never to return.
   proc->state = ZOMBIE;
